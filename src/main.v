@@ -23,7 +23,7 @@ fn (mut emulator Emulator) load_rom() !{
 
 	if arguments.len > 1 {
 		
-		mut file := os.open(arguments[2])!
+		mut file := os.open(arguments[1])!
 		defer { file.close() }
 		
 		println(' Loading ROM in the memory...\n')
