@@ -33,7 +33,7 @@ fn (mut emulator Emulator) load_rom() !{
 			emulator.chip8.set_ram(u8(instruction))
 		}
 
-		println(' ROM successfully loaded into memory!')
+		println('ROM successfully loaded into memory!')
 
 	}else{
 		panic('ROM path not especified!')

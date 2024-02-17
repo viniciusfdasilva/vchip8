@@ -33,7 +33,7 @@ fn load_animate() {
 
     mut bars := ['|','/','-','\\']
     
-    for i := 0; i < 10000; i++ {
+    for i := 0; i < 4000; i++ {
             print('[${bars[i%4]}]\r ')
             time.sleep(400000)
     }
