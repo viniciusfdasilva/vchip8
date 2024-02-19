@@ -3,29 +3,30 @@
 import rand
 
 const font := [
-	[0xF0, 0x90, 0x90, 0x90, 0xF0],  // 0
-	[0x20, 0x60, 0x20, 0x20, 0x70], //  1
-	[0xF0, 0x10, 0xF0, 0x80, 0xF0], //  2
-	[0xF0, 0x10, 0xF0, 0x10, 0xF0], //  3
-	[0x90, 0x90, 0xF0, 0x10, 0x10], //  4
-	[0xF0, 0x80, 0xF0, 0x10, 0xF0], //  5
-	[0xF0, 0x80, 0xF0, 0x90, 0xF0], //  6
-	[0xF0, 0x10, 0x20, 0x40, 0x40], //  7
-	[0xF0, 0x90, 0xF0, 0x90, 0xF0], //  8
-	[0xF0, 0x90, 0xF0, 0x10, 0xF0], //  9
-	[0xF0, 0x90, 0xF0, 0x90, 0x90], //  A
-	[0xE0, 0x90, 0xE0, 0x90, 0xE0], //  B
-	[0xF0, 0x80, 0x80, 0x80, 0xF0], //  C
-	[0xE0, 0x90, 0x90, 0x90, 0xE0], //  D
-	[0xF0, 0x80, 0xF0, 0x80, 0xF0], //  E 
-	[0xF0, 0x80, 0xF0, 0x80, 0x80],	//	F
+	[u8(0xF0), u8(0x90), u8(0x90), u8(0x90), u8(0xF0)],  // 0
+	[u8(0x20), u8(0x60), u8(0x20), u8(0x20), u8(0x70)], //  1
+	[u8(0xF0), u8(0x10), u8(0xF0), u8(0x80), u8(0xF0)], //  2
+	[u8(0xF0), u8(0x10), u8(0xF0), u8(0x10), u8(0xF0)], //  3
+	[u8(0x90), u8(0x90), u8(0xF0), u8(0x10), u8(0x10)], //  4
+	[u8(0xF0), u8(0x80), u8(0xF0), u8(0x10), u8(0xF0)], //  5
+	[u8(0xF0), u8(0x80), u8(0xF0), u8(0x90), u8(0xF0)], //  6
+	[u8(0xF0), u8(0x10), u8(0x20), u8(0x40), u8(0x40)], //  7
+	[u8(0xF0), u8(0x90), u8(0xF0), u8(0x90), u8(0xF0)], //  8
+	[u8(0xF0), u8(0x90), u8(0xF0), u8(0x10), u8(0xF0)], //  9
+	[u8(0xF0), u8(0x90), u8(0xF0), u8(0x90), u8(0x90)], //  A
+	[u8(0xE0), u8(0x90), u8(0xE0), u8(0x90), u8(0xE0)], //  B
+	[u8(0xF0), u8(0x80), u8(0x80), u8(0x80), u8(0xF0)], //  C
+	[u8(0xE0), u8(0x90), u8(0x90), u8(0x90), u8(0xE0)], //  D
+	[u8(0xF0), u8(0x80), u8(0xF0), u8(0x80), u8(0xF0)], //  E 
+	[u8(0xF0), u8(0x80), u8(0xF0), u8(0x80), u8(0x80)],	//	F
 ]
 
 struct Screen{
-	pub mut:	
+	pub:	
 		display_width    int = 64	
 		display_height   int = 32	
-		display [64][32]u8
+	mut:	
+		display [32][64]u8
 }
 
 const mem_size         = 4096
@@ -37,44 +38,52 @@ struct Chip8{
 		ram  [mem_size]u8
 		v [num_of_registers]u8
 		screen Screen
-		pc u16
+		pc u16 = 0x200
 		i  int
 		stack Stack
 		delay_timer u8
 }
 
 fn (mut chip Chip8) start_cpu(){
-	
+
+	chip.screen = Screen{}
+
+	mut index := 0
 	// load font in the memory
 	for sprite in font {
-		for byte_sprite in sprite {
-			chip.set_ram(u8(byte_sprite))
-		}
+		chip.set_ram(sprite, index)
 	}
 }
 
 fn (mut chip Chip8) run(){
-	instruction := chip.fetch()
-	chip.decode_and_run(instruction)
+	
+	for{
+		mut instruction := chip.fetch()
+		println(instruction)
+		chip.decode_and_run(instruction)
+	}
 }
 
-fn (mut chip Chip8) set_ram(instruction u8) {
-	chip.ram[chip.pc] = instruction
+
+fn (mut chip Chip8) set_ram(instructions []u8, index int) {
+	
+	mut j := index
+	for i := 0; i < instructions.len; i++ {
+		chip.ram[j] = instructions[i]
+		j++
+	}	
 }
 
-fn (chip Chip8) get_instruction() u8{
-	instruction := chip.ram[chip.pc]
-	return instruction
-}
-
-fn (chip Chip8) fetch() u16{
+fn (mut chip Chip8) fetch() u16{
 
 	mut instruction := u16(0x00)
-	mut half_instruction := chip.get_instruction()
 	
+	mut half_instruction := chip.ram[chip.pc]
+
 	instruction = instruction | half_instruction
 	instruction = instruction << 8
-	half_instruction = chip.get_instruction()
+	half_instruction = chip.ram[chip.pc + 1]
+	
 	instruction = instruction | half_instruction
 
 	return instruction
@@ -86,6 +95,7 @@ fn (mut chip Chip8) decode_and_run(instruction u16) {
    
 	mut opcode_msb := instruction & 0xF000
 	mut opcode_lsb := instruction & 0x00FF
+	mut is_jump := false
 
 	match opcode_msb{
 
@@ -99,8 +109,8 @@ fn (mut chip Chip8) decode_and_run(instruction u16) {
 
 				0x00E0 {
 					
-					for i in 0..chip.screen.display_width {
-						for j in 0..chip.screen.display_height {
+					for i := 0; i < chip.screen.display_height; i++{
+						for j := 0; j < chip.screen.display_width; j++ {
 							chip.screen.display[i][j] = 0
 						}
 					}
@@ -116,6 +126,7 @@ fn (mut chip Chip8) decode_and_run(instruction u16) {
 		0x1000 {
 			nnn = instruction & 0x0FFF
 			chip.pc = u8(nnn)
+			is_jump = true
 			// Jumps to address NNN
 		}
 
@@ -125,6 +136,7 @@ fn (mut chip Chip8) decode_and_run(instruction u16) {
 
 			chip.stack.push(chip.pc)
 			chip.pc = u16(nnn)
+			is_jump = true
 			// Calls subroutine at NNN
 		}
 
@@ -153,7 +165,7 @@ fn (mut chip Chip8) decode_and_run(instruction u16) {
 		}
 
 		0x6000 {
-			x  = instruction & 0xF00
+			x  = (instruction & 0xF00) >> 8
 			nn = instruction & 0x00FF
 
 			chip.v[x] = u8(nn)
@@ -161,7 +173,7 @@ fn (mut chip Chip8) decode_and_run(instruction u16) {
 		}
 
 		0x7000 {
-			x  = instruction & 0xF00
+			x  = (instruction & 0xF00) >> 8
 			nn = instruction & 0x00FF
 
 			chip.v[x] += u8(nn)
@@ -273,6 +285,7 @@ fn (mut chip Chip8) decode_and_run(instruction u16) {
 			nnn = instruction & 0x0FFF
 
 			chip.pc = u16(nnn + chip.v[0])
+			is_jump = true
 		}
 
 		0xC000 {
@@ -289,23 +302,33 @@ fn (mut chip Chip8) decode_and_run(instruction u16) {
 			y = (instruction & 0x00F0) >> 4
 			n = (instruction & 0x000F)
 
+			mut regvy := u8(chip.v[y] % chip.screen.display_height)
+			mut regvx := u8(chip.v[x] % chip.screen.display_width)
+
 			chip.v[f] = 0
 
 			for y_coord := 0; y_coord < n; y_coord++ {
-
-				regvy := chip.v[y + y_coord] & chip.screen.display_height-1
-
+				
+				
+				regn := chip.ram[chip.i + y_coord]
+				
 				for x_coord := 0; x_coord < 8; x_coord++ {
 					
-					regvx := chip.v[x + x_coord] & chip.screen.display_width-1
+					if (regvx + x_coord) < chip.screen.display_width && (regvy + y_coord) < chip.screen.display_height {
+				
+						if regn & (0x80 >> x_coord) == 1 && chip.screen.display[regvy + y_coord][regvx + x_coord] == 1 {
+							chip.v[f] = 1
+							chip.screen.display[regvy + y_coord][regvx + x_coord] = 0
+						}
 
-					if chip.screen.display[regvx + y_coord][regvy + x_coord] == 1 {
-						chip.v[f] = 1
-						chip.screen.display[regvx + y_coord][regvy + x_coord] = 0
+
+						chip.screen.display[regvy + y_coord][regvx + x_coord] = chip.ram[chip.i + y_coord]
+
+						regvx = u8(chip.v[x + x_coord] % chip.screen.display_width)
 					}
-
-					chip.screen.display[regvx + y_coord][regvy + x_coord] = chip.ram[chip.i + y_coord]
 				}
+				
+				regvy = u8(chip.v[y + y_coord] % chip.screen.display_height)
 			}
 		}
 
@@ -372,6 +395,6 @@ fn (mut chip Chip8) decode_and_run(instruction u16) {
 			panic('Invalid instruction!')
 		}
 	}
-
+	if !is_jump { chip.pc += 2 }
 }
 

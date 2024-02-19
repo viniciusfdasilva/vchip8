@@ -12,10 +12,9 @@ struct Emulator{
 		is_graphic bool = is_graphic()
 }
 
-fn (emulator Emulator) draw_block(i int, j int, mut ctx gg.Context) {
-	emulator.graphic.draw_rect_filled(f32((j - 1) * 20) + 1, f32((i - 1) * 20), f32(20 - 1), f32(20 - 1), gx.rgb(255,255,255))
+fn (mut emulator Emulator) draw_block(i f32, j f32) {
+	emulator.graphic.draw_rect_filled(f32((j - 1) * 20) + 14, f32((i - 1) * 20), f32(20 - 1), f32(20 - 1), gx.rgb(255,255,255))
 }
-
 
 fn (mut emulator Emulator) load_rom() !{
 
@@ -29,9 +28,9 @@ fn (mut emulator Emulator) load_rom() !{
 		println(' Loading ROM in the memory...\n')
 		load_animate()
 		
-		for instruction in file.read_bytes_at(1024, 0) {
-			emulator.chip8.set_ram(u8(instruction))
-		}
+		mut instructions := file.read_bytes_at(1024, 0)
+		mut index := 0x200
+		emulator.chip8.set_ram(instructions, index)
 
 		println('ROM successfully loaded into memory!')
 
@@ -40,29 +39,21 @@ fn (mut emulator Emulator) load_rom() !{
 	}
 }
 
-fn (mut emulator Emulator) draw_screen(){
-	
-	emulator.graphic.begin()
+fn draw_screen(mut emulator Emulator){
 	
 	display_height := emulator.chip8.screen.display_height
 	display_width  := emulator.chip8.screen.display_width
 
-	mut buf := []u8{len: display_height*display_width}
-	mut i := 0
+	for y := 0; y < display_height; y++ {
+		for x := 0; x < display_width; x++ {
 
-	for y := 0; y < emulator.chip8.screen.display_height; y++ {
-		for x := 0; x < emulator.chip8.screen.display_width; x++ {
-			
 			pixel := emulator.chip8.screen.display[y][x]
 
-			buf[i] = u8((0xFFFFFF00 * pixel) | 0x000000FF);
-			i++
+			if pixel == 1 {
+				emulator.draw_block(f32(y*10), f32(x*10))
+			}
 		}
 	}
-
-	emulator.graphic.create_image_from_memory(unsafe{ &buf[0] }, buf.len) or { panic(err) }
-	emulator.graphic.end()
-
 }
 
 fn (mut emulator Emulator) show_display(){
@@ -147,18 +138,14 @@ fn is_graphic() bool{
 	return os.environ()['DISPLAY'] != ''
 }
 
+fn frame(){
+	print('oi')
+}
+
 fn main() {
 
-	mut emulator := Emulator{
-
+	mut emulator := &Emulator{
 		chip8 : Chip8{}
-
-		graphic : gg.new_context(
-						bg_color: gx.rgb(0, 0, 0)
-						width: 1280
-						height: 640
-						window_title: 'V CHIP-8 Emulator'
-					)
 	}
 
 	if emulator.is_graphic {
@@ -166,9 +153,16 @@ fn main() {
 		emulator.load_rom()!
 		emulator.chip8.start_cpu()
 		emulator.chip8.run()
-
-		emulator.draw_screen()
-		emulator.show_display()
+		print('oi')
+		emulator.graphic = gg.new_context(
+								bg_color: gx.rgb(0, 0, 0)
+								width: 1280
+								height: 640
+								window_title: 'V CHIP-8 Emulator'
+								frame_fn : draw_screen
+								user_data: emulator
+							)
+		//emulator.show_display()
 	}else{
 		panic('System is not graphic!')
 	}
