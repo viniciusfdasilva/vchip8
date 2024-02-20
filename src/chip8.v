@@ -95,17 +95,18 @@ fn (mut chip Chip8) decode_and_run(instruction u16) {
 	mut is_jump := false
 	chip.is_draw = false
 
+	//println(opcode_lsb)
 	match opcode_msb{
 
 		0x0000 {
 
-			match opcode_msb {
-				0x00EE {
+			match opcode_lsb {
+				0xEE {
 					chip.pc = chip.stack.pop() or { panic(err) }
 					// Returns from a subroutine
 				}
 
-				0x00E0 {
+				0xE0 {
 					chip.is_draw = true
 					for i := 0; i < chip.screen.display_height; i++{
 						for j := 0; j < chip.screen.display_width; j++ {
@@ -114,9 +115,13 @@ fn (mut chip Chip8) decode_and_run(instruction u16) {
 					}
 				}
 
-				else {
-					nnn = instruction & 0x0FFF
+				//0NNN {
+				//	nnn = instruction & 0x0FFF
 					// Calls machine code routine
+				//}
+
+				else{
+					panic('Invalid instruction! 0x${instruction.hex()}')
 				}
 			}
 		}
@@ -260,7 +265,7 @@ fn (mut chip Chip8) decode_and_run(instruction u16) {
 				}
 
 				else{
-					panic('Invalid instruction!')
+					panic('Invalid instruction! 0x${instruction.hex()}')
 				}
 			}
 
@@ -313,10 +318,9 @@ fn (mut chip Chip8) decode_and_run(instruction u16) {
 				
 				for x_coord := 0; x_coord < 8; x_coord++ {
 					
-					if pixel & (0x80 >> x_coord) == 1 {
+					if (pixel & (0x80 >> x_coord)) != 0 {
 						if chip.screen.display[regvy + y_coord][regvx + x_coord] == 1 {
 							chip.v[f] = 1
-							//chip.screen.display[regvy + y_coord][regvx + x_coord] = 0
 						}
 						
 						chip.screen.display[regvy + y_coord][regvx + x_coord] ^= 1
@@ -385,7 +389,7 @@ fn (mut chip Chip8) decode_and_run(instruction u16) {
 		//},
 
 		else {
-			panic('Invalid instruction!')
+			panic('Invalid instruction! 0x${instruction.hex()}')
 		}
 	}
 	if !is_jump { chip.pc += 2 }

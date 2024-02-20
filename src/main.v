@@ -39,8 +39,12 @@ fn (mut emulator Emulator) load_rom() !{
 	}
 }
 
-fn draw_screen(mut emulator Emulator){
+fn frame(mut emulator Emulator){
 	
+	emulator.graphic.begin()
+
+	emulator.chip8.run()
+
 	display_height := emulator.chip8.screen.display_height
 	display_width  := emulator.chip8.screen.display_width
 
@@ -54,6 +58,7 @@ fn draw_screen(mut emulator Emulator){
 			}
 		}
 	}
+	emulator.graphic.end()
 }
 
 fn (mut emulator Emulator) show_display(){
@@ -138,10 +143,6 @@ fn is_graphic() bool{
 	return os.environ()['DISPLAY'] != ''
 }
 
-fn frame(){
-	print('oi')
-}
-
 fn main() {
 
 	mut emulator := &Emulator{
@@ -158,23 +159,11 @@ fn main() {
 									width: 1280
 									height: 640
 									window_title: 'V CHIP-8 Emulator'
-									frame_fn : draw_screen
+									frame_fn : frame
 									user_data: emulator
 								)
 
-		
-
-		for{
-			emulator.chip8.run()
-
-			emulator.graphic.quit()
-			if emulator.chip8.is_draw {
-				emulator.graphic.begin()
-				emulator.show_display()
-				emulator.graphic.end()
-				
-			}
-		}
+		emulator.show_display()
 
 	}else{
 		panic('System is not graphic!')
