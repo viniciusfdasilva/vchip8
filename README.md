@@ -6,8 +6,10 @@ The Chip-8 is an interpreted programming language originally designed to develop
 
 # Installation
 
+For install V programming language see more in: ![V install](https://github.com/vlang/v)
+
 ```shell
-git clone https://github.com/viniciusfdasilva/vchip8.git
+git clone --branch main https://github.com/viniciusfdasilva/vchip8.git
 ```
 ```shell
 cd vchip8
