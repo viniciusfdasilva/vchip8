@@ -22,4 +22,6 @@ v run . ./roms/[YOUR_ROM].ch8
 
 # Result
 
+![Air](./img/air.gif)![Tetris](./img/tetris.gif)
+
 ![Alt ou título da imagem](./img/ibm.png)![Alt ou título da imagem](./img/chip8.png)
