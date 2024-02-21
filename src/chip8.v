@@ -1,7 +1,6 @@
 
 
 import rand
-import readline
 
 const font := [
 	[u8(0xF0), u8(0x90), u8(0x90), u8(0x90), u8(0xF0)],  // 0
@@ -21,37 +20,6 @@ const font := [
 	[u8(0xF0), u8(0x80), u8(0xF0), u8(0x80), u8(0xF0)], //  E 
 	[u8(0xF0), u8(0x80), u8(0xF0), u8(0x80), u8(0x80)],	//	F
 ]
-
-const keyboard := {
-	0x1  : 0x1
-	0x2  : 0x2
-	0x3  : 0x3
-	0x4  : 0x4
-	0x71 : 
-	0x51 :
-	0x77 :
-	0x57 :
-	0x45 :
-	0x65 :
-	0x72 :
-	0x52 :
-	0x41 :
-	0x61 :
-	0x73 :
-	0x53 :
-	0x64 :
-	0x44 :
-	0x46 :
-	0x66 :
-	0x7a :
-	0x5a :
-	0x58 :
-	0x78 :
-	0x43 :
-	0x63 :
-	0x56 :
-	0x76 :
-}
 
 struct Screen{
 	pub:	
@@ -378,85 +346,56 @@ fn (mut chip Chip8) decode_and_run(instruction u16) {
 		//	}
 		//},
 //
-		0xF000 {
-			x = (opcode & 0x0F00) >> 8
-			s_opcode = opcode & 0x00FF
-
-			match s_opcode {
-				0x07{
-					chip.v[x] = chip.delay_timer
-				}
-
-				0x0A{
-
-				}
-
-				0x15{
-					chip.delay_timer = chip.v[x]
-				}
-
-				0x18{
-					chip.sound_timer = chip.v[x]
-				}
-
-				0x1E{
-					chip.i += chip.v[x]
-				}
-
-				0x29{
-
-				}
-
-				0x33{
-
-				}
-
-				0x55{
-
-				}
-
-				0x65{
-
-				}
-
-				else {
-					panic('Invalid instruction! 0x${instruction.hex()}')
-				}
-			}
-		}
+//		0xF000 {
+//			x = (opcode & 0x0F00) >> 8
+//			s_opcode = opcode & 0x00FF
+//
+//			match s_opcode {
+//				0x07{
+//					chip.v[x] = chip.delay_timer
+//				}
+//
+//				0x0A{
+//
+//				}
+//
+//				0x15{
+//					chip.delay_timer = chip.v[x]
+//				}
+//
+//				0x18{
+//					chip.sound_timer = chip.v[x]
+//				}
+//
+//				0x1E{
+//					chip.i += chip.v[x]
+//				}
+//
+//				0x29{
+//
+//				}
+//
+//				0x33{
+//
+//				}
+//
+//				0x55{
+//
+//				}
+//
+//				0x65{
+//
+//				}
+//
+//				else {
+//					panic('Invalid instruction! 0x${instruction.hex()}')
+//				}
+//			}
+//		}
 
 		else {
 			panic('Invalid instruction! 0x${instruction.hex()}')
 		}
 	}
 	if !is_jump { chip.pc += 2 }
-}
-
-fn get_key()
-{
-	mut r := readline.Readline{}
-	key := r.read_char() or { panic(err) }
-
-	match key {
-		0x1 {
-
-		}
-
-		0x2 {
-
-		}
-
-		0x3 {
-
-		}
-
-		0x4 {
-
-		}
-
-		0x1 {
-
-		}
-
-	}
 }
