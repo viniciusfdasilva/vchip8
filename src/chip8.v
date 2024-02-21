@@ -61,8 +61,9 @@ struct Screen{
 const mem_size         = 4096
 const num_of_registers = 16
 const f                = 15
-
 struct Chip8{
+	timer_clock u8 = 0x9
+
 	pub mut:
 		ram  [mem_size]u8
 		v [num_of_registers]u8
@@ -74,6 +75,7 @@ struct Chip8{
 		sound_timer u8
 		is_draw     bool
 		key         u8
+		cycles      u8
 }
 
 fn (mut chip Chip8) start_cpu(){
@@ -102,6 +104,11 @@ fn (mut chip Chip8) set_ram(instructions []u8, index u16) {
 	}	
 }
 
+fn (mut chip Chip8) update_timers(){
+	if chip.delay_timer > 0 { chip.delay_timer-- }
+	if chip.sound_timer > 0 { chip.sound_timer-- }
+}
+
 fn (mut chip Chip8) fetch() u16{
 
 	mut instruction := u16(0x00)
@@ -126,20 +133,17 @@ fn (mut chip Chip8) decode_and_run(instruction u16) {
 	mut is_jump := false
 	chip.is_draw = false
 
-	if chip.delay_timer > 0 { chip.delay_timer-- }
-	if chip.sound_timer > 0 { chip.sound_timer-- }
-
 	match opcode_msb{
 
 		0x0000 {
 
 			match opcode_lsb {
-				0xEE {
+				0x00EE {
 					chip.pc = chip.stack.pop() or { panic(err) }
 					// Returns from a subroutine
 				}
 
-				0xE0 {
+				0x00E0 {
 					chip.is_draw = true
 					for i := 0; i < chip.screen.display_height; i++{
 						for j := 0; j < chip.screen.display_width; j++ {
@@ -154,8 +158,8 @@ fn (mut chip Chip8) decode_and_run(instruction u16) {
 				//}
 
 				else{
-					nnn = instruction & 0x0FFF
-					//panic('Invalid instruction! 0x${instruction.hex()}')
+					//nnn = instruction & 0x0FFF
+					panic('Invalid instruction! 0x${instruction.hex()}')
 				}
 			}
 		}
@@ -341,8 +345,8 @@ fn (mut chip Chip8) decode_and_run(instruction u16) {
 			y = (instruction & 0x00F0) >> 4
 			n = (instruction & 0x000F)
 
-			mut regvy := u16(chip.v[y] % chip.screen.display_height)
-			mut regvx := u16(chip.v[x] % chip.screen.display_width)
+			mut regvy := u16(chip.v[y])
+			mut regvx := u16(chip.v[x])
 
 			chip.v[f] = 0
 
@@ -413,13 +417,13 @@ fn (mut chip Chip8) decode_and_run(instruction u16) {
 				}
 
 				0x29{
-					chip.i = chip.v[x] * 5
+					chip.i = chip.v[x] * 0x5
 				}
 
 				0x33{
 					chip.ram[chip.i] = chip.v[x] / 100;
 					chip.ram[chip.i + 1] = (chip.v[x] / 10) % 10
-					chip.ram[chip.i + 2] = chip.v[x] % 10;
+					chip.ram[chip.i + 2] = (chip.v[x] % 100) % 10;
 				}
 
 				0x55{
@@ -427,14 +431,14 @@ fn (mut chip Chip8) decode_and_run(instruction u16) {
 					for i := 0; i <= x; i++ {
 						chip.ram[chip.i + i] = chip.v[i]
 					}
-					chip.i = u16(chip.i + x + 1)
+					chip.i = u16(x + 1)
 				}
 
 				0x65{
 					for i := 0; i <= x; i++ {
-						chip.v[x] = chip.ram[chip.i + x]
+						chip.v[x] = chip.ram[chip.i + i]
 					}
-					chip.i = u16(chip.i + x + 1)
+					chip.i = u16(x + 1)
 				}
 
 				else {
