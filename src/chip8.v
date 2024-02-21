@@ -1,6 +1,35 @@
-
-
 import rand
+
+const keyboard := {
+	0x1  : 0x1  //1  - 1
+	0x2  : 0x2  //2  - 2
+	0x3  : 0x3  //3  - 3
+	0x4  : 0x43 //4  - C 
+	0x51 : 0x4  //Q  - 4
+	0x71 : 0x4  //q  - 4
+	0x57 : 0x5  //W  - 5
+	0x77 : 0x5  //w  - 5
+	0x45 : 0x6  //E  - 6
+	0x65 : 0x6  //e  - 6
+	0x52 : 0x44 //R  - D
+	0x72 : 0x44 //r  - D
+	0x41 : 0x7  //A  - 7
+	0x61 : 0x7  //a  - 7
+	0x53 : 0x8  //S  - 8
+	0x73 : 0x8  //s  - 8
+	0x44 : 0x9  //D  - 9
+	0x64 : 0x9  //d  - 9
+	0x46 : 0x45 //F  - E
+	0x66 : 0x45 //f  - E
+	0x5A : 0x41 //Z  - A
+	0x7A : 0x41 //z  - A
+	0x58 : 0x30 //X  - 0
+	0x78 : 0x30 //x  - 0
+	0x43 : 0x42 //C  - B
+	0x63 : 0x42 //c  - B
+	0x56 : 0x46 //V  - F
+	0x76 : 0x46 //v  - F
+}
 
 const font := [
 	[u8(0xF0), u8(0x90), u8(0x90), u8(0x90), u8(0xF0)],  // 0
@@ -42,8 +71,9 @@ struct Chip8{
 		i  u16
 		stack Stack
 		delay_timer u8
-		sount_timer u8
+		sound_timer u8
 		is_draw     bool
+		key         u8
 }
 
 fn (mut chip Chip8) start_cpu(){
@@ -96,7 +126,9 @@ fn (mut chip Chip8) decode_and_run(instruction u16) {
 	mut is_jump := false
 	chip.is_draw = false
 
-	//println(opcode_lsb)
+	if chip.delay_timer > 0 { chip.delay_timer-- }
+	if chip.sound_timer > 0 { chip.sound_timer-- }
+
 	match opcode_msb{
 
 		0x0000 {
@@ -122,7 +154,8 @@ fn (mut chip Chip8) decode_and_run(instruction u16) {
 				//}
 
 				else{
-					panic('Invalid instruction! 0x${instruction.hex()}')
+					nnn = instruction & 0x0FFF
+					//panic('Invalid instruction! 0x${instruction.hex()}')
 				}
 			}
 		}
@@ -308,8 +341,8 @@ fn (mut chip Chip8) decode_and_run(instruction u16) {
 			y = (instruction & 0x00F0) >> 4
 			n = (instruction & 0x000F)
 
-			mut regvy := u16(chip.v[y])
-			mut regvx := u16(chip.v[x])
+			mut regvy := u16(chip.v[y] % chip.screen.display_height)
+			mut regvx := u16(chip.v[x] % chip.screen.display_width)
 
 			chip.v[f] = 0
 
@@ -319,83 +352,105 @@ fn (mut chip Chip8) decode_and_run(instruction u16) {
 				
 				for x_coord := 0; x_coord < 8; x_coord++ {
 					
-					if (pixel & (0x80 >> x_coord)) != 0 {
-						if chip.screen.display[regvy + y_coord][regvx + x_coord] == 1 {
-							chip.v[f] = 1
+					if (regvy + y_coord) < chip.screen.display_height && (regvx + x_coord) < chip.screen.display_width { 
+						if (pixel & (0x80 >> x_coord)) != 0 {
+							if chip.screen.display[regvy + y_coord][regvx + x_coord] == 1 {
+								chip.v[f] = 1
+							}
+							
+							chip.screen.display[regvy + y_coord][regvx + x_coord] ^= 1
 						}
-						
-						chip.screen.display[regvy + y_coord][regvx + x_coord] ^= 1
 					}
 				}
 			}
 		}
 
-		//0xE000 {
-		//	x = (opcode & 0x0F00) >> 8
-		//	s_opcode = opcode & 0x00FF
-//
-		//	match s_opcode {
-//
-		//		0x9E {
-//
-		//		},
-//
-		//		0xA1 {
-//
-		//		},
-		//	}
-		//},
-//
-//		0xF000 {
-//			x = (opcode & 0x0F00) >> 8
-//			s_opcode = opcode & 0x00FF
-//
-//			match s_opcode {
-//				0x07{
-//					chip.v[x] = chip.delay_timer
-//				}
-//
-//				0x0A{
-//
-//				}
-//
-//				0x15{
-//					chip.delay_timer = chip.v[x]
-//				}
-//
-//				0x18{
-//					chip.sound_timer = chip.v[x]
-//				}
-//
-//				0x1E{
-//					chip.i += chip.v[x]
-//				}
-//
-//				0x29{
-//
-//				}
-//
-//				0x33{
-//
-//				}
-//
-//				0x55{
-//
-//				}
-//
-//				0x65{
-//
-//				}
-//
-//				else {
-//					panic('Invalid instruction! 0x${instruction.hex()}')
-//				}
-//			}
-//		}
+		0xE000 {
+			x = (instruction & 0x0F00) >> 8
+			opcode_lsb = instruction & 0x00FF
+
+			match opcode_lsb {
+
+				0x9E {
+
+					if chip.key == chip.v[x] { chip.pc += 2 }
+				}
+
+				0xA1 {
+
+					if chip.key != chip.v[x] { chip.pc += 2 }
+				}
+				
+				else{
+					panic('Invalid instruction 0x${instruction.hex()}')
+				}
+			}
+		}
+
+		0xF000 {
+			x = (instruction & 0x0F00) >> 8
+			opcode_lsb = instruction & 0x00FF
+
+			match opcode_lsb {
+				0x07{
+					chip.v[x] = chip.delay_timer
+				}
+
+				0x0A{
+					chip.v[x] = chip.key
+				}
+
+				0x15{
+					chip.delay_timer = chip.v[x]
+				}
+
+				0x18{
+					chip.sound_timer = chip.v[x]
+					}
+
+				0x1E{
+					chip.i += chip.v[x]
+				}
+
+				0x29{
+					chip.i = chip.v[x] * 5
+				}
+
+				0x33{
+					chip.ram[chip.i] = chip.v[x] / 100;
+					chip.ram[chip.i + 1] = (chip.v[x] / 10) % 10
+					chip.ram[chip.i + 2] = chip.v[x] % 10;
+				}
+
+				0x55{
+
+					for i := 0; i <= x; i++ {
+						chip.ram[chip.i + i] = chip.v[i]
+					}
+					chip.i = u16(chip.i + x + 1)
+				}
+
+				0x65{
+					for i := 0; i <= x; i++ {
+						chip.v[x] = chip.ram[chip.i + x]
+					}
+					chip.i = u16(chip.i + x + 1)
+				}
+
+				else {
+					panic('Invalid instruction! 0x${instruction.hex()}')
+				}
+			}
+		}
 
 		else {
 			panic('Invalid instruction! 0x${instruction.hex()}')
 		}
 	}
 	if !is_jump { chip.pc += 2 }
+}
+
+
+fn (mut chip Chip8) set_key(key int){
+	chip.key = u8(keyboard[key])
 }

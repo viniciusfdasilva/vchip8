@@ -159,8 +159,9 @@ fn main() {
 									width: 1280
 									height: 640
 									window_title: 'V CHIP-8 Emulator'
-									frame_fn : frame
 									user_data: emulator
+									frame_fn : frame
+									event_fn: on_event
 								)
 
 		emulator.show_display()
@@ -168,4 +169,8 @@ fn main() {
 	}else{
 		panic('System is not graphic!')
 	}
+}
+
+fn on_event(e &gg.Event, mut emulator Emulator){
+	emulator.chip8.set_key(e.char_code)
 }
