@@ -46,10 +46,10 @@ fn frame(mut emulator Emulator){
 	emulator.chip8.run()
 	emulator.chip8.cycles++;
 	emulator.chip8.update_timers()
-
+	
 	display_height := emulator.chip8.screen.display_height
 	display_width  := emulator.chip8.screen.display_width
-
+	
 	for y := 0; y < display_height; y++ {
 		for x := 0; x < display_width; x++ {
 
@@ -59,6 +59,10 @@ fn frame(mut emulator Emulator){
 				emulator.draw_block(f32((y)*20), f32((x)*20))
 			}
 		}
+	}
+
+	if emulator.chip8.cpu_clock == emulator.chip8.cycles {
+		emulator.chip8.cycles = 0
 	}
 
 	emulator.graphic.end()
