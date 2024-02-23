@@ -13,7 +13,7 @@ struct Emulator{
 }
 
 fn (mut emulator Emulator) draw_block(i f32, j f32) {
-	emulator.graphic.draw_rect_filled(j,i, f32(20-1), f32(20-1), gx.rgb(0,255,0))
+	emulator.graphic.draw_rect_filled(j,i, f32(20), f32(20), gx.rgb(0,255,0))
 }
 
 fn (mut emulator Emulator) load_rom() !{
@@ -44,100 +44,33 @@ fn frame(mut emulator Emulator){
 	emulator.graphic.begin()
 
 	emulator.chip8.run()
-
+	emulator.chip8.cycles++;
+	emulator.chip8.update_timers()
+	
 	display_height := emulator.chip8.screen.display_height
 	display_width  := emulator.chip8.screen.display_width
-
+	
 	for y := 0; y < display_height; y++ {
 		for x := 0; x < display_width; x++ {
 
 			pixel := emulator.chip8.screen.display[y][x]
 			
 			if pixel == 1 {
-				emulator.draw_block(f32((y-1)*20), f32((x-1)*20))
+				emulator.draw_block(f32((y)*20), f32((x)*20))
 			}
 		}
 	}
+
+	if emulator.chip8.cpu_clock == emulator.chip8.cycles {
+		emulator.chip8.cycles = 0
+	}
+
 	emulator.graphic.end()
 }
 
 fn (mut emulator Emulator) show_display(){
 	emulator.graphic.run()
 }
-
-//fn (emulator Emulator) keyboard(input string) !string{
-//
-//	match input {
-//		'1' {
-//			return 0x0001
-//		},
-//
-//		'2' {
-//
-//		},
-//
-//		'3' {
-//
-//		},
-//
-//		'4' {
-//
-//		},
-//
-//		'Q', 'q' {
-//
-//		},
-//
-//		'W', 'w' {
-//
-//		},
-//
-//		'E', 'e' {
-//
-//		},
-//
-//		'R', 'r' {
-//
-//		},
-//
-//		'A', 'a' {
-//
-//		},
-//
-//		'S', 's' {
-//
-//		},
-//
-//		'D', 'd' {
-//
-//		},
-//
-//		'F', 'f' {
-//
-//		},
-//
-//		'Z', 'z' {
-//
-//		},
-//
-//		'X', 'x' {
-//
-//		},
-//
-//		'C', 'c' {
-//
-//		},
-//
-//		'V', 'v' {
-//
-//		},
-//
-//		else {
-//			panic('Invalid key!')
-//		}
-//	}
-//	
-//}
 
 fn is_graphic() bool{
 	return os.environ()['DISPLAY'] != ''
